@@ -7,10 +7,8 @@
 Test case for twisted.mail.imap4
 """
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+
+from io import StringIO
 
 import codecs
 import locale
@@ -51,9 +49,9 @@ def sortNest(l):
     l = l[:]
     l.sort()
     for i in range(len(l)):
-        if isinstance(l[i], types.ListType):
+        if isinstance(l[i], list):
             l[i] = sortNest(l[i])
-        elif isinstance(l[i], types.TupleType):
+        elif isinstance(l[i], tuple):
             l[i] = tuple(sortNest(list(l[i])))
     return l
 
@@ -1351,9 +1349,7 @@ class IMAP4ServerTestCase(IMAP4HelperMixin, unittest.TestCase):
         self.assertEqual(self.result, [1] * len(succeed) + [0] * len(fail))
         mbox = SimpleServer.theAccount.mailboxes.keys()
         answers = ['inbox', 'testbox', 'test/box', 'test', 'test/box/box']
-        mbox.sort()
-        answers.sort()
-        self.assertEqual(mbox, [a.upper() for a in answers])
+        self.assertEqual(set(mbox), set(a.upper() for a in answers))
 
     def testDelete(self):
         SimpleServer.theAccount.addMailbox('delete/me')
@@ -1368,7 +1364,7 @@ class IMAP4ServerTestCase(IMAP4HelperMixin, unittest.TestCase):
         d2 = self.loopback()
         d = defer.gatherResults([d1, d2])
         d.addCallback(lambda _:
-                      self.assertEqual(SimpleServer.theAccount.mailboxes.keys(), []))
+                      self.assertFalse(SimpleServer.theAccount.mailboxes.keys()))
         return d
 
     def testIllegalInboxDelete(self):
@@ -1447,7 +1443,7 @@ class IMAP4ServerTestCase(IMAP4HelperMixin, unittest.TestCase):
         d2 = self.loopback()
         d = defer.gatherResults([d1, d2])
         d.addCallback(lambda _:
-                      self.assertEqual(SimpleServer.theAccount.mailboxes.keys(),
+                      list(self.assertEqual(SimpleServer.theAccount.mailboxes.keys()),
                                         ['NEWNAME']))
         return d
 
@@ -1488,8 +1484,7 @@ class IMAP4ServerTestCase(IMAP4HelperMixin, unittest.TestCase):
     def _cbTestHierarchicalRename(self, ignored):
         mboxes = SimpleServer.theAccount.mailboxes.keys()
         expected = ['newname', 'newname/m1', 'newname/m2']
-        mboxes.sort()
-        self.assertEqual(mboxes, [s.upper() for s in expected])
+        self.assertEqual(set(mboxes), set(s.upper() for s in expected))
 
     def testSubscribe(self):
         def login():
@@ -3717,11 +3712,11 @@ class NewFetchTestCase(unittest.TestCase, IMAP4HelperMixin):
     def fetch(self, messages, uid):
         self.received_messages = messages
         self.received_uid = uid
-        return iter(zip(range(len(self.msgObjs)), self.msgObjs))
+        return enumerate(self.msgObjs)
 
     def _fetchWork(self, uid):
         if uid:
-            for (i, msg) in zip(range(len(self.msgObjs)), self.msgObjs):
+            for (i, msg) in enumerate(self.msgObjs):
                 self.expected[i]['UID'] = str(msg.getUID())
 
         def result(R):
@@ -4248,7 +4243,7 @@ class DefaultSearchTestCase(IMAP4HelperMixin, unittest.TestCase):
         """
         Pretend to be a mailbox and let C{self.server} lookup messages on me.
         """
-        return zip(range(1, len(self.msgObjs) + 1), self.msgObjs)
+        return enumerate(self.msgObjs, 1)
 
 
     def _messageSetSearchTest(self, queryTerms, expectedMessages):
@@ -4635,7 +4630,7 @@ class CopyWorkerTestCase(unittest.TestCase):
 
         m = FakeMailbox()
         msgs = [FakeyMessage({'Header-Counter': str(i)}, (), 'Date', 'Body %d' % (i,), i + 10, None) for i in range(1, 11)]
-        d = f([im for im in zip(range(1, 11), msgs)], 'tag', m)
+        d = f(list(enumerate(msgs, 1)), 'tag', m)
 
         def cbCopy(results):
             seen = []
@@ -4663,10 +4658,10 @@ class CopyWorkerTestCase(unittest.TestCase):
 
         m = MessageCopierMailbox()
         msgs = [object() for i in range(1, 11)]
-        d = f([im for im in zip(range(1, 11), msgs)], 'tag', m)
+        d = f(list(enumerate(msgs, 1)), 'tag', m)
 
         def cbCopy(results):
-            self.assertEqual(results, zip([1] * 10, range(1, 11)))
+            self.assertEqual(results, list(zip([1] * 10, range(1, 11))))
             for (orig, new) in zip(msgs, m.msgs):
                 self.assertIdentical(orig, new)
 
@@ -4702,7 +4697,8 @@ class TLSTestCase(IMAP4HelperMixin, unittest.TestCase):
         self.client.requireTransportSecurity = True
 
         methods = [login, list, status, examine, logout]
-        map(self.connected.addCallback, map(strip, methods))
+        for meth in map(strip, methods):
+            self.connected.addCallbak(meth)
         self.connected.addCallbacks(self._cbStopClient, self._ebGeneral)
         def check(ignored):
             self.assertEqual(self.server.startedTLS, True)
@@ -4833,7 +4829,7 @@ class Timeout(IMAP4HelperMixin, unittest.TestCase):
             self.assertNotEquals(self.server.state, 'timeout')
 
         def cbAdvance(ignored):
-            for i in xrange(4):
+            for i in range(4):
                 c.advance(.5)
 
         SlowMailbox.fetchDeferred.addCallback(cbAdvance)
