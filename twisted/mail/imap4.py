@@ -6199,7 +6199,7 @@ def decoder(s, errors=None):
     """
     r = []
     decode = []
-    s = memory_cast(s, 'c')
+    s = memory_cast(memoryview(s), 'c')
     for c in s:
         if c == b'&' and not decode:
             decode.append('&')
