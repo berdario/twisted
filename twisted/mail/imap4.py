@@ -6165,14 +6165,14 @@ def encoder(s, errors=None):
     """
     r = bytearray()
     _in = []
-    valid_chars = set(map(chr, range(0x20,0x7f))) - {"&"}
+    valid_chars = set(map(chr, range(0x20,0x7f))) - {u"&"}
     for c in s:
         if c in valid_chars:
             if _in:
                 r += b'&' + modified_base64(''.join(_in)) + b'-'
                 del _in[:]
             r.append(ord(c))
-        elif c == '&':
+        elif c == u'&':
             if _in:
                 r += b'&' + modified_base64(''.join(_in)) + b'-'
                 del _in[:]
@@ -6202,10 +6202,10 @@ def decoder(s, errors=None):
     s = memory_cast(memoryview(s), 'c')
     for c in s:
         if c == b'&' and not decode:
-            decode.append('&')
+            decode.append(u'&')
         elif c == b'-' and decode:
             if len(decode) == 1:
-                r.append('&')
+                r.append(u'&')
             else:
                 r.append(modified_unbase64(b''.join(decode[1:])))
             decode = []
