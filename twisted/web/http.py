@@ -94,6 +94,7 @@ from twisted.internet import interfaces, reactor, protocol, address
 from twisted.internet.defer import Deferred
 from twisted.protocols import policies, basic
 from twisted.python import log
+from twisted.python.compat import intTypes
 
 from twisted.web.http_headers import _DictHeaders, Headers
 
@@ -118,10 +119,6 @@ from twisted.web._responses import (
 
     RESPONSES)
 
-if _PY3:
-    _intTypes = int
-else:
-    _intTypes = (int, long)
 
 protocol_version = "HTTP/1.1"
 
@@ -1011,7 +1008,7 @@ class Request:
         @type code: C{int}
         @type message: C{bytes}
         """
-        if not isinstance(code, _intTypes):
+        if not isinstance(code, intTypes):
             raise TypeError("HTTP response code must be int or long")
         self.code = code
         if message:

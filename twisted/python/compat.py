@@ -256,6 +256,10 @@ def comparable(klass):
     return klass
 
 
+if _PY3:
+    intTypes = int
+else:
+    intTypes = (int, long)
 
 if _PY3:
     unicode = str
