@@ -473,9 +473,8 @@ class IPluggableAuthenticationModules(ICredentials):
     currently unused, but is required by the PAM library.
     """
 
-implementer(IPluggableAuthenticationModules)
+@implementer(IPluggableAuthenticationModules)
 class PluggableAuthenticationModules:
-
     def __init__(self, username, pamConversion):
         self.username = username
         self.pamConversion = pamConversion

@@ -8,14 +8,14 @@ Test case for twisted.mail.imap4
 """
 
 
-from io import StringIO
+from io import StringIO, BytesIO
 
 import codecs
 import locale
 import os
 import types
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from twisted.mail.imap4 import MessageSet
 from twisted.mail import imap4
@@ -92,7 +92,7 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         C{codecs.getreader('imap4-utf-7')} returns the I{imap4-utf-7} stream
         reader class.
         """
-        reader = codecs.getreader('imap4-utf-7')(StringIO('Hello&AP8-world'))
+        reader = codecs.getreader('imap4-utf-7')(BytesIO(b'Hello&AP8-world'))
         self.assertEqual(reader.read(), u'Hello\xffworld')
 
 
@@ -101,10 +101,10 @@ class IMAP4UTF7TestCase(unittest.TestCase):
         C{codecs.getwriter('imap4-utf-7')} returns the I{imap4-utf-7} stream
         writer class.
         """
-        output = StringIO()
+        output = BytesIO()
         writer = codecs.getwriter('imap4-utf-7')(output)
         writer.write(u'Hello\xffworld')
-        self.assertEqual(output.getvalue(), 'Hello&AP8-world')
+        self.assertEqual(output.getvalue(), b'Hello&AP8-world')
 
 
     def test_encode(self):
@@ -288,7 +288,7 @@ class IMAP4HelperTestCase(unittest.TestCase):
     """
 
     def test_fileProducer(self):
-        b = (('x' * 1) + ('y' * 1) + ('z' * 1)) * 10
+        b = ((u'x' * 1) + (u'y' * 1) + (u'z' * 1)) * 10
         c = BufferingConsumer()
         f = StringIO(b)
         p = imap4.FileProducer(f)
@@ -725,7 +725,7 @@ class IMAP4HelperTestCase(unittest.TestCase):
 
     def test_files(self):
         inputStructure = [
-            'foo', 'bar', 'baz', StringIO('this is a file\r\n'), 'buz'
+            u'foo', u'bar', u'baz', StringIO(u'this is a file\r\n'), u'buz'
         ]
 
         output = '"foo" "bar" "baz" {16}\r\nthis is a file\r\n "buz"'
@@ -735,7 +735,7 @@ class IMAP4HelperTestCase(unittest.TestCase):
 
     def test_quoteAvoider(self):
         input = [
-            'foo', imap4.DontQuoteMe('bar'), "baz", StringIO('this is a file\r\n'),
+            'foo', imap4.DontQuoteMe('bar'), "baz", StringIO(u'this is a file\r\n'),
             imap4.DontQuoteMe('buz'), ""
         ]
 
@@ -967,8 +967,8 @@ class IMAP4HelperTestCase(unittest.TestCase):
                 self.assertEqual(L, expected,
                                   "len(%r) = %r != %r" % (input, L, expected))
 
+@implementer(imap4.IMailboxInfo, imap4.IMailbox, imap4.ICloseableMailbox)
 class SimpleMailbox:
-    implements(imap4.IMailboxInfo, imap4.IMailbox, imap4.ICloseableMailbox)
 
     flags = ('\\Flag1', 'Flag2', '\\AnotherSysFlag', 'LastFlag')
     messages = []
@@ -1443,8 +1443,8 @@ class IMAP4ServerTestCase(IMAP4HelperMixin, unittest.TestCase):
         d2 = self.loopback()
         d = defer.gatherResults([d1, d2])
         d.addCallback(lambda _:
-                      list(self.assertEqual(SimpleServer.theAccount.mailboxes.keys()),
-                                        ['NEWNAME']))
+                      list(self.assertEqual(SimpleServer.theAccount.mailboxes.keys(),
+                                        ['NEWNAME'])))
         return d
 
     def testIllegalInboxRename(self):
@@ -3383,8 +3383,8 @@ class FakeyServer(imap4.IMAP4Server):
     def sendServerGreeting(self):
         pass
 
+@implementer(imap4.IMessage)
 class FakeyMessage(util.FancyStrMixin):
-    implements(imap4.IMessage)
 
     showAttributes = ('headers', 'flags', 'date', 'body', 'uid')
 
@@ -3408,7 +3408,7 @@ class FakeyMessage(util.FancyStrMixin):
         return self.date
 
     def getBodyFile(self):
-        return StringIO(self._body)
+        return BytesIO(self._body)
 
     def getSize(self):
         return self.size
@@ -4243,7 +4243,7 @@ class DefaultSearchTestCase(IMAP4HelperMixin, unittest.TestCase):
         """
         Pretend to be a mailbox and let C{self.server} lookup messages on me.
         """
-        return enumerate(self.msgObjs, 1)
+        return list(enumerate(self.msgObjs, 1))
 
 
     def _messageSetSearchTest(self, queryTerms, expectedMessages):
@@ -4409,8 +4409,8 @@ class DefaultSearchTestCase(IMAP4HelperMixin, unittest.TestCase):
 
 
 
+@implementer(imap4.ISearchableMailbox)
 class FetchSearchStoreTestCase(unittest.TestCase, IMAP4HelperMixin):
-    implements(imap4.ISearchableMailbox)
 
     def setUp(self):
         self.expected = self.result = None
@@ -4570,8 +4570,8 @@ class FakeMailbox:
         self.args.append((body, flags, date))
         return defer.succeed(None)
 
+@implementer(imap4.IMessageFile)
 class FeaturefulMessage:
-    implements(imap4.IMessageFile)
 
     def getFlags(self):
         return 'flags'
@@ -4580,10 +4580,10 @@ class FeaturefulMessage:
         return 'internaldate'
 
     def open(self):
-        return StringIO("open")
+        return StringIO(u"open")
 
+@implementer(imap4.IMessageCopier)
 class MessageCopierMailbox:
-    implements(imap4.IMessageCopier)
 
     def __init__(self):
         self.msgs = []
@@ -4658,7 +4658,7 @@ class CopyWorkerTestCase(unittest.TestCase):
 
         m = MessageCopierMailbox()
         msgs = [object() for i in range(1, 11)]
-        d = f(list(enumerate(msgs, 1)), 'tag', m)
+        d = f(enumerate(msgs, 1), 'tag', m)
 
         def cbCopy(results):
             self.assertEqual(results, list(zip([1] * 10, range(1, 11))))
@@ -4698,7 +4698,7 @@ class TLSTestCase(IMAP4HelperMixin, unittest.TestCase):
 
         methods = [login, list, status, examine, logout]
         for meth in map(strip, methods):
-            self.connected.addCallbak(meth)
+            self.connected.addCallback(meth)
         self.connected.addCallbacks(self._cbStopClient, self._ebGeneral)
         def check(ignored):
             self.assertEqual(self.server.startedTLS, True)

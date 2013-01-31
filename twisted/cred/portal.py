@@ -10,7 +10,7 @@ The point of integration of application and authentication.
 
 from twisted.internet import defer
 from twisted.internet.defer import maybeDeferred
-from twisted.python import failure, reflect
+from twisted.python import failure, _reflectpy3 as reflect
 from twisted.cred import error
 from zope.interface import providedBy, Interface
 

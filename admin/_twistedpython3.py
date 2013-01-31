@@ -53,6 +53,7 @@ modules = [
     "twisted.internet.threads",
     "twisted.internet.udp",
     "twisted.internet._utilspy3",
+    "twisted.mail.imap4"
     "twisted.names",
     "twisted.names.cache",
     "twisted.names.client",
@@ -141,6 +142,7 @@ testModules = [
     "twisted.internet.test.test_udp",
     "twisted.internet.test.test_udp_internals",
     "twisted.internet.test.test_utilspy3",
+    "twisted.mail.test.test_imap"
     "twisted.names.test.test_cache",
     "twisted.names.test.test_client",
     "twisted.names.test.test_common",

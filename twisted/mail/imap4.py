@@ -28,7 +28,7 @@ import types
 
 import email.utils
 
-from io import StringIO
+from io import StringIO, BytesIO
 from itertools import chain
 
 from zope.interface import implementer, Interface
@@ -298,7 +298,7 @@ class LiteralFile:
         if size > self._memoryFileLimit:
             self.data = tempfile.TemporaryFile()
         else:
-            self.data = StringIO()
+            self.data = BytesIO()
 
     def write(self, data):
         self.size -= len(data)
@@ -1317,8 +1317,8 @@ class IMAP4Server(basic.LineReceiver, policies.TimeoutMixin):
 
     def __cbStatus(self, status, tag, box):
         line = ' '.join(['%s %s' % x for x in status.items()])
-        self.sendUntaggedResponse('STATUS %s (%s)' % (box, line))
-        self.sendPositiveResponse(tag, 'STATUS complete')
+        self.sendUntaggedResponse(('STATUS %s (%s)' % (box, line)).encode("imap4-utf-7"))
+        self.sendPositiveResponse(tag, b'STATUS complete')
 
     def __ebStatus(self, failure, tag, box):
         self.sendBadResponse(tag, 'STATUS %s failed: %s' % (box, str(failure.value)))
@@ -1449,9 +1449,9 @@ class IMAP4Server(basic.LineReceiver, policies.TimeoutMixin):
     def __cbSearch(self, result, tag, mbox, uid):
         if uid:
             result = map(mbox.getUID, result)
-        ids = ' '.join([unicode(i) for i in result])
-        self.sendUntaggedResponse('SEARCH ' + ids)
-        self.sendPositiveResponse(tag, 'SEARCH completed')
+        ids = ' '.join([unicode(i) for i in result]).encode()
+        self.sendUntaggedResponse(b'SEARCH ' + ids)
+        self.sendPositiveResponse(tag, b'SEARCH completed')
 
 
     def __cbManualSearch(self, result, tag, mbox, query, uid,
@@ -2396,7 +2396,7 @@ class IMAP4Client(basic.LineReceiver, policies.TimeoutMixin):
         if octets > self._memoryFileLimit:
             return tempfile.TemporaryFile()
         else:
-            return StringIO()
+            return BytesIO()
 
     def makeTag(self):
         tag = '%0.4X' % self.tagID
